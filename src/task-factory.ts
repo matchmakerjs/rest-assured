@@ -1,41 +1,32 @@
 import { IncomingMessage, RequestListener, ServerResponse } from "http";
 import { Response, RestCall } from "./api";
+import { DataSink } from "./data-sink";
 import { headerSetter, methodAndPayloadSetter, methodSetter, PayloadSender, TaskConfigurer } from "./task-configurer";
 
 export function taskFactory(req: IncomingMessage, listener: RequestListener): RestCall {
-    let responseBuffer: Buffer;
-    function appendData() {
-        if (!arguments.length) {
-            return;
-        }
-        const [chunk, encoding] = arguments;
-        if (typeof chunk === 'function') {
-            return;
-        }
-        if (!responseBuffer) {
-            responseBuffer = Buffer.from(chunk, encoding);
-            return;
-        }
-        responseBuffer = Buffer.concat([responseBuffer, Buffer.from(chunk, encoding)]);
-    }
-    const res = createResponse(req, appendData);
+    const sink = new DataSink();
+    const res = createResponse(req, sink);
 
     let payloadSender: PayloadSender;
     const task = Promise.resolve()
-        .then(() => new Promise<Response>(async (resolve) => {
-            if (payloadSender) {
-                payloadSender(res);
+        .then(() => new Promise<Response>(async (resolve, reject) => {
+            try {
+                if (payloadSender) {
+                    payloadSender(res);
+                }
+                const listenerResult = listener(req, res) as any;
+                if (listenerResult?.constructor === Promise) {
+                    await listenerResult;
+                }
+                const result = {
+                    statusCode: res.statusCode,
+                    headers: res.getHeaders(),
+                    body: buildResponseBody(res, sink.buffer)
+                } as Response;
+                resolve(result);
+            } catch (error) {
+                reject(error);
             }
-            const listenerResult = listener(req, res) as any;
-            if (listenerResult?.constructor === Promise) {
-                await listenerResult;
-            }
-            const result = {
-                statusCode: res.statusCode,
-                headers: res.getHeaders(),
-                body: buildResponseBody(res, responseBuffer)
-            } as Response;
-            resolve(result);
         })) as RestCall;
 
     configureTask(Object.create({ task }, {
@@ -46,26 +37,25 @@ export function taskFactory(req: IncomingMessage, listener: RequestListener): Re
     return task;
 }
 
-function createResponse(req: IncomingMessage, appendData: Function): ServerResponse {
+function createResponse(req: IncomingMessage, sink: DataSink): ServerResponse {
     const serverResponse = new ServerResponse(req);
     return Object.create(
         serverResponse,
         {
             write: {
-                get: () => appendData
+                get: () => sink.getAppender()
             },
             end: {
-                get: () => function () {
-                    appendData.apply(null, arguments);
-                    if (arguments.length) {
-                        const callback = arguments[arguments.length - 1];
+                get: () => (...args: any) => {
+                    sink.getAppender().apply(null, args);
+                    if (args.length) {
+                        const callback = args[args.length - 1];
                         if (typeof callback === 'function') {
-                            serverResponse.end(callback);
-                            return;
+                            callback();
                         }
                     }
-
                     serverResponse.end();
+                    serverResponse.emit('finish');
                 }
             }
         }) as ServerResponse;
@@ -76,10 +66,10 @@ function buildResponseBody(res: ServerResponse, responseBuffer: Buffer): any {
         return null;
     }
     const contentType = res.getHeader('content-type') as string;
-    if (contentType?.startsWith('application/json')) {
+    if (contentType?.match('^.+?/json;?')) {
         return JSON.parse(responseBuffer.toString());
     }
-    if (contentType?.match('text/.+;?')) {
+    if (contentType?.match('^text/.+?;?')) {
         return responseBuffer.toString();
     }
     return responseBuffer;
