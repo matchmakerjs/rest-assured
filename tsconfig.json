@@ -1,0 +1,18 @@
+{
+   "compilerOptions": {
+      "target": "ESNEXT",
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "declaration": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "noImplicitAny": true,
+      "noImplicitThis": true,
+      "strictFunctionTypes": true,
+      "alwaysStrict": true
+   },
+   "exclude": [
+      "dist",
+      "**/*.test.ts"
+   ]
+}
