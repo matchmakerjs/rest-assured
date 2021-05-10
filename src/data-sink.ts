@@ -11,7 +11,7 @@ export class DataSink {
                 return;
             }
             const [chunk, encoding] = args;
-            if (typeof chunk === 'function') {
+            if (!chunk || typeof chunk === 'function') {
                 return;
             }
             if (!this._buffer) {
