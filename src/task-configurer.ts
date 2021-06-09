@@ -1,4 +1,5 @@
 import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from "http";
+import { Readable, Writable } from "stream";
 import { HeaderSetter, PathAndPayloadSetter, PathSetter, RestCall } from "./api";
 
 export interface TaskConfigurer {
@@ -47,7 +48,29 @@ export function payloadSenderFactory(req: IncomingMessage, payload: any): Payloa
             }
             return;
         }
-        req.headers['content-type'] = 'application/json';
+
+        if (!req.headers['content-type']) {
+            req.headers['content-type'] = 'application/json';
+        }
+
+        if (Buffer.isBuffer(payload)) {
+            req.emit('data', payload);
+            req.emit('end');
+            return;
+        }
+
+        if (payload instanceof Readable) {
+            const echo = new Writable({
+                write: function (chunk, encoding, next) {
+                    req.emit('data', chunk);
+                    next();
+                }
+            });
+            echo.once('close', () => req.emit('end'));
+            payload.pipe(echo);
+            return;
+        }
+
         req.emit('data', JSON.stringify(payload));
         req.emit('end');
     };
