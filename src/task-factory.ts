@@ -1,7 +1,19 @@
-import { IncomingMessage, RequestListener, ServerResponse } from "http";
+import {
+    IncomingMessage,
+    OutgoingHttpHeader,
+    OutgoingHttpHeaders,
+    RequestListener,
+    ServerResponse
+} from "http";
 import { Response, RestCall } from "./api";
 import { DataSink } from "./data-sink";
-import { headerSetter, methodAndPayloadSetter, methodSetter, PayloadSender, TaskConfigurer } from "./task-configurer";
+import {
+    headerSetter,
+    methodAndPayloadSetter,
+    methodSetter,
+    PayloadSender,
+    TaskConfigurer
+} from "./task-configurer";
 
 export function taskFactory(req: IncomingMessage, listener: RequestListener): RestCall {
     const sink = new DataSink();
@@ -39,9 +51,19 @@ export function taskFactory(req: IncomingMessage, listener: RequestListener): Re
 
 function createResponse(req: IncomingMessage, sink: DataSink): ServerResponse {
     const serverResponse = new ServerResponse(req);
+    let responseHeaders: OutgoingHttpHeaders;
     return Object.create(
         serverResponse,
         {
+            writeHead: {
+                get: () => (statusCode: number, headers?: OutgoingHttpHeaders | OutgoingHttpHeader[]) => {
+                    if (headers && !Array.isArray(headers)) {
+                        // console.log(headers);
+                        responseHeaders = headers;
+                    }
+                    serverResponse.writeHead(statusCode, headers);
+                }
+            },
             write: {
                 get: () => sink.getAppender()
             },
@@ -57,7 +79,10 @@ function createResponse(req: IncomingMessage, sink: DataSink): ServerResponse {
                     serverResponse.end();
                     serverResponse.emit('finish');
                 }
-            }
+            },
+            getHeaders: {
+                get: () => (() => responseHeaders)
+            },
         }) as ServerResponse;
 }
 
@@ -78,10 +103,10 @@ function buildResponseBody(res: ServerResponse, responseBuffer: Buffer): any {
 function configureTask(configurer: TaskConfigurer, req: IncomingMessage) {
     configurer.task.withHeaders = headerSetter(configurer, req);
 
-    configurer.task.get = methodSetter(configurer, req, 'GET');
     configurer.task.head = methodSetter(configurer, req, 'HEAD');
+    configurer.task.get = methodSetter(configurer, req, 'GET');
+    configurer.task.delete = methodSetter(configurer, req, 'DELETE');
     configurer.task.post = methodAndPayloadSetter(configurer, req, 'POST');
     configurer.task.patch = methodAndPayloadSetter(configurer, req, 'PATCH');
     configurer.task.put = methodAndPayloadSetter(configurer, req, 'PUT');
-    configurer.task.delete = methodSetter(configurer, req, 'DELETE');
 }

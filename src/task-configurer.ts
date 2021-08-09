@@ -44,7 +44,7 @@ export function payloadSenderFactory(req: IncomingMessage, payload: any): Payloa
     const writer = (res: ServerResponse) => {
         if (!req.listenerCount('data')) {
             if (!res.headersSent) {
-                process.nextTick(() => writer(res));
+                setTimeout(() => writer(res));
             }
             return;
         }
