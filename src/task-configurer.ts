@@ -34,7 +34,7 @@ export function methodAndPayloadSetter(builder: TaskConfigurer, req: IncomingMes
         req.url = path;
         req.method = method;
 
-        builder.payloadSender = payload && payloadSenderFactory(req, payload);
+        builder.payloadSender = payloadSenderFactory(req, payload === undefined ? Buffer.of() : payload);
 
         return builder.task;
     };
@@ -53,13 +53,13 @@ export function payloadSenderFactory(req: IncomingMessage, payload: any): Payloa
             req.headers['content-type'] = 'application/json';
         }
 
-        if (Buffer.isBuffer(payload)) {
+        if (payload && Buffer.isBuffer(payload)) {
             req.emit('data', payload);
             req.emit('end');
             return;
         }
 
-        if (payload instanceof Readable) {
+        if (payload && payload instanceof Readable) {
             const echo = new Writable({
                 write: function (chunk, encoding, next) {
                     req.emit('data', chunk);
