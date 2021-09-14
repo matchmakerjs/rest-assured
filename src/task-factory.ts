@@ -5,7 +5,7 @@ import {
     RequestListener,
     ServerResponse
 } from "http";
-import { Response, RestCall } from "./api";
+import { Response, Server } from "./api";
 import { DataSink } from "./data-sink";
 import {
     headerSetter,
@@ -15,7 +15,7 @@ import {
     TaskConfigurer
 } from "./task-configurer";
 
-export function taskFactory(req: IncomingMessage, listener: RequestListener): RestCall {
+export function taskFactory(req: IncomingMessage, listener: RequestListener): Server {
     const sink = new DataSink();
     const res = createResponse(req, sink);
 
@@ -39,7 +39,7 @@ export function taskFactory(req: IncomingMessage, listener: RequestListener): Re
             } catch (error) {
                 reject(error);
             }
-        })) as RestCall;
+        })) as Server;
 
     configureTask(Object.create({ task }, {
         payloadSender: {

@@ -1,6 +1,6 @@
 import { IncomingMessage, RequestListener } from "http";
 import { Socket } from "net";
-import { RestCall } from "./api";
+import { Server } from "./api";
 import { defaulHeaders } from "./task-configurer";
 import { taskFactory } from "./task-factory";
 
@@ -12,7 +12,7 @@ const socket = Object.create(
         }
     }) as Socket;
 
-export function request(listener: RequestListener): RestCall {
+export function createServer(listener: RequestListener): Server {
 
     const req = new IncomingMessage(socket);
     req.method = 'GET';

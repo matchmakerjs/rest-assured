@@ -16,7 +16,7 @@ type RequestBuilder = {
 
 export type ResponseSource = Promise<Response> & RequestBuilder;
 
-export type RestCall = {
+export type Server = {
     // withMethod: (method: string) => ResponseSource;
     get: PathSetter;
     head: PathSetter;

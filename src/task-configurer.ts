@@ -1,9 +1,9 @@
 import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from "http";
 import { Readable, Writable } from "stream";
-import { HeaderSetter, PathAndPayloadSetter, PathSetter, RestCall } from "./api";
+import { HeaderSetter, PathAndPayloadSetter, PathSetter, Server } from "./api";
 
 export interface TaskConfigurer {
-    readonly task: RestCall,
+    readonly task: Server,
     payloadSender?: PayloadSender
 }
 
