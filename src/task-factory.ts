@@ -33,7 +33,8 @@ export function taskFactory(req: IncomingMessage, listener: RequestListener): Se
                 const result = {
                     statusCode: res.statusCode,
                     headers: res.getHeaders(),
-                    body: buildResponseBody(res, sink.buffer)
+                    buffer: sink.buffer,
+                    parseJson: () => JSON.parse(sink.buffer.toString())
                 } as Response;
                 resolve(result);
             } catch (error) {
@@ -84,20 +85,6 @@ function createResponse(req: IncomingMessage, sink: DataSink): ServerResponse {
                 get: () => (() => responseHeaders)
             },
         }) as ServerResponse;
-}
-
-function buildResponseBody(res: ServerResponse, responseBuffer: Buffer): any {
-    if (!responseBuffer?.length) {
-        return null;
-    }
-    const contentType = res.getHeader('content-type') as string;
-    if (contentType?.match('^.+?/json;?')) {
-        return JSON.parse(responseBuffer.toString());
-    }
-    if (contentType?.match('^text/.+?;?')) {
-        return responseBuffer.toString();
-    }
-    return responseBuffer;
 }
 
 function configureTask(configurer: TaskConfigurer, req: IncomingMessage) {

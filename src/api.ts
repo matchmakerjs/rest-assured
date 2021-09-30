@@ -3,7 +3,8 @@ import { IncomingHttpHeaders, OutgoingHttpHeaders } from "http";
 export interface Response {
     readonly statusCode: number,
     readonly headers: OutgoingHttpHeaders
-    readonly body?: any
+    readonly buffer?: Buffer,
+    readonly parseJson: <T>() => T
 }
 
 export type HeaderSetter = (headers: IncomingHttpHeaders) => ResponseSource;
