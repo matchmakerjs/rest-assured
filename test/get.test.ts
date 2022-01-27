@@ -1,6 +1,6 @@
 import * as express from 'express';
 import * as supertest from 'supertest';
-import { request } from '../src/request';
+import { createServer } from '../src/server-factory';
 
 const textPayload = 'hello world!';
 
@@ -10,11 +10,13 @@ app.get('/', (req, res) => {
 });
 
 it('should get hello world! with rest-assured', async () => {
-    const response = await request(app);
-    expect(response.body).toBe(textPayload);
+    const response = await createServer(app).get('/');
+    expect(response.statusCode).toBe(200);
+    expect(response.buffer).toEqual(Buffer.from(textPayload));
 });
 
 it('should get hello world! with supertest', async () => {
     const response = await supertest(app).get('/');
-    expect(response.text).toBe(textPayload);
+    expect(response.statusCode).toBe(200);
+    expect(response.text).toEqual(textPayload);
 });

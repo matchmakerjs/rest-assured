@@ -61,7 +61,7 @@ export function payloadSenderFactory(req: IncomingMessage, payload: any): Payloa
 
         if (payload && payload instanceof Readable) {
             const echo = new Writable({
-                write: function (chunk, encoding, next) {
+                write (chunk, encoding, next) {
                     req.emit('data', chunk);
                     next();
                 }
