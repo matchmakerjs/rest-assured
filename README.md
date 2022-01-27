@@ -12,7 +12,7 @@ Below is an example using express and Jest:
 
 ```
 import * as express from 'express';
-import { request } from '@olaleyeone/rest-assured';
+import { createServer } from '@matchmakerjs/rest-assured';
 
 const textPayload = 'hello world!';
 
@@ -22,7 +22,8 @@ app.get('/', (req, res) => {
 });
 
 it('should get hello world!', async () => {
-    const response = await request(app);
-    expect(response.body).toBe(textPayload);
+    const response = await createServer(app).get('/');
+    expect(response.statusCode).toBe(200);
+    expect(response.buffer).toEqual(Buffer.from(textPayload));
 });
 ```
