@@ -52,17 +52,19 @@ export function taskFactory(req: IncomingMessage, listener: RequestListener): Se
 
 function createResponse(req: IncomingMessage, sink: DataSink): ServerResponse {
     const serverResponse = new ServerResponse(req);
-    let responseHeaders: OutgoingHttpHeaders;
     return Object.create(
         serverResponse,
         {
             writeHead: {
                 get: () => (statusCode: number, headers?: OutgoingHttpHeaders | OutgoingHttpHeader[]) => {
                     if (headers && !Array.isArray(headers)) {
-                        // console.log(headers);
-                        responseHeaders = headers;
+                        serverResponse.statusCode = statusCode;
+                        for (let key in headers) {
+                            serverResponse.setHeader(key, headers[key]);
+                        }
+                    } else {
+                        serverResponse.writeHead(statusCode, headers);
                     }
-                    serverResponse.writeHead(statusCode, headers);
                 }
             },
             write: {
@@ -80,10 +82,7 @@ function createResponse(req: IncomingMessage, sink: DataSink): ServerResponse {
                     serverResponse.end();
                     serverResponse.emit('finish');
                 }
-            },
-            getHeaders: {
-                get: () => (() => responseHeaders)
-            },
+            }
         }) as ServerResponse;
 }
 
